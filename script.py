@@ -1,25 +1,25 @@
-from urllib.request import urlopen
-from urllib.request import Request
-import pathlib
-from bs4 import BeautifulSoup as bs
-import re
 import os
+import pathlib
+import re
+from urllib.request import Request, urlopen
+
+from bs4 import BeautifulSoup as bs
 
 
 def download_file(dir, url):
-    file_name = url.split('/')[-1]
+    file_name = url.split("/")[-1]
 
-    pathlib.Path('./downloads/'+dir).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(f"./downloads/{dir}").mkdir(parents=True, exist_ok=True)
 
-    my_file = pathlib.Path('./downloads/'+dir+"/"+file_name)
+    my_file = pathlib.Path(f"./downloads/{dir}/" + file_name)
     if my_file.is_file() or file_name.endswith("txt"):
-        print ("Skip: "+file_name)
+        print(f"Skip: {file_name}")
     else:
-        print("Download: "+dir + "/"+file_name)
-        try:            
+        print(f"Download:  {dir}/{file_name}")
+        try:
             filedata = urlopen(url)
             datatowrite = filedata.read()
-            with open('./downloads/'+dir+"/"+file_name, 'wb') as f:
+            with open(f"./downloads/{dir}/{file_name}", "wb") as f:
                 f.write(datatowrite)
             pass
         except:
@@ -27,26 +27,40 @@ def download_file(dir, url):
     return
 
 
-pathlib.Path('./downloads').mkdir(parents=True, exist_ok=True)
+pathlib.Path("./downloads").mkdir(parents=True, exist_ok=True)
 
-req = Request(
-    'https://fsbio.rwth-aachen.de/service/downloads/fach/biotechnologie-msc')
-req.add_header(
-    'Cookie'
+req = Request("https://fsbio.rwth-aachen.de/service/downloads/fach/biotechnologie-msc")
+
+req.add_header("Cookie", "")
 html_page = urlopen(req)
 
 soup = bs(html_page)
 
-links = []
-for link in soup.findAll('a', attrs={'href': re.compile("^/service/downloads/fach/")}):
-    links.append(link.get('href'))
+
+links = [
+    link.get("href")
+    for link in soup.findAll(
+        "a", attrs={"href": re.compile("^/service/downloads/fach/")}
+    )
+]
 
 for link in links:
-    req = Request('https://fsbio.rwth-aachen.de'+link)
-    print('https://fsbio.rwth-aachen.de'+link)
+    req = Request(f"https://fsbio.rwth-aachen.de{link}")
+    print(f"https://fsbio.rwth-aachen.de{link}")
     req.add_header(
-        'Cookie', 'has_js=1; SESS9208fb201b178189fd366303dff7a5d6=rrgllcdssj2tsrvve9v8vqcl84')
+        "Cookie",
+        "has_js=1; SESS9208fb201b178189fd366303dff7a5d6=rrgllcdssj2tsrvve9v8vqcl84",
+    )
     download_html_page = urlopen(req)
     soup = bs(download_html_page)
-    for downloadLink in soup.findAll('a', attrs={'href': re.compile("^http://www.fsbio.rwth-aachen.de/sites/default/files/download_files/")}):
-        download_file(link.split('/')[-1], downloadLink.get('href'))
+
+    file_list = soup.findAll(
+        "a",
+        attrs={
+            "href": re.compile(
+                "^http://www.fsbio.rwth-aachen.de/sites/default/files/download_files/"
+            )
+        },
+    )
+    for downloadLink in file_list:
+        download_file(link.split("/")[-1], downloadLink.get("href"))
